@@ -1061,6 +1061,7 @@ extension RoomHardwareManagementMethods on Room {
 
   Future<void> setSpeakerOn(bool speakerOn) async {
     if (lkPlatformIs(PlatformType.iOS) || lkPlatformIs(PlatformType.android)) {
+      debugPrint('Lkt Room  setSpeakerphoneOn speakerOn:$speakerOn');
       await Hardware.instance.setSpeakerphoneOn(speakerOn);
       engine.roomOptions = engine.roomOptions.copyWith(
         defaultAudioOutputOptions:
@@ -1077,6 +1078,7 @@ extension RoomHardwareManagementMethods on Room {
     if (roomOptions.defaultAudioOutputOptions.speakerOn != null) {
       if (lkPlatformIs(PlatformType.iOS) ||
           lkPlatformIs(PlatformType.android)) {
+        debugPrint('applyAudioSpeakerSettings setSpeakerphoneOn isSpeakerOn:${ roomOptions.defaultAudioOutputOptions.speakerOn}');
         await Hardware.instance.setSpeakerphoneOn(
             roomOptions.defaultAudioOutputOptions.speakerOn!);
       }
