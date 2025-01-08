@@ -147,7 +147,7 @@ class Hardware {
 
   bool get canSwitchSpeakerphone =>
       (lkPlatformIsMobile()) &&
-      [AudioTrackState.localOnly, AudioTrackState.localAndRemote]
+      [AudioTrackState.localOnly, AudioTrackState.remoteOnly,AudioTrackState.localAndRemote]
           .contains(audioTrackState);
 
   Future<void> setSpeakerphoneOn(bool enable) async {
