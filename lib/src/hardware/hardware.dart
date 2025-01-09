@@ -146,8 +146,7 @@ class Hardware {
   bool get preferSpeakerOutput => _preferSpeakerOutput;
 
   bool get canSwitchSpeakerphone =>
-      ((lkPlatformIs(PlatformType.android))
-          && [AudioTrackState.localOnly, AudioTrackState.remoteOnly, AudioTrackState.localAndRemote].contains(audioTrackState)) ||
+      (lkPlatformIs(PlatformType.android)) ||
           ((lkPlatformIsMobile()) &&
               [AudioTrackState.localOnly, AudioTrackState.localAndRemote]
                   .contains(audioTrackState));
