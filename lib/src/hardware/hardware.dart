@@ -151,7 +151,11 @@ class Hardware {
               [AudioTrackState.localOnly, AudioTrackState.localAndRemote]
                   .contains(audioTrackState));
 
+
   Future<void> setSpeakerphoneOn(bool enable) async {
+    print('Livekit: isPlatformAndroid:${lkPlatformIs(PlatformType.android)} '
+        ' iOS:${lkPlatformIs(PlatformType.iOS)} lkPlatformIsMobile:${lkPlatformIsMobile()}');
+
     if (lkPlatformIsMobile()) {
       speakerOn = enable;
       if (canSwitchSpeakerphone) {
