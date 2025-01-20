@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 
 import 'package:meta/meta.dart';
@@ -31,7 +33,8 @@ class Native {
   static Future<bool> configureAudio(
       NativeAudioConfiguration configuration) async {
     try {
-      if (bypassVoiceProcessing) {
+      logger.info('configureNativeAudio isIOS: ${Platform.isIOS} bypassVoiceProcessing:$bypassVoiceProcessing');
+      if (bypassVoiceProcessing || Platform.isIOS) {
         /// skip configuring audio if bypassVoiceProcessing
         /// is enabled
         return false;
