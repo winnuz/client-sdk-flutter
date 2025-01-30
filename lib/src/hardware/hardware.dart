@@ -108,11 +108,11 @@ class Hardware {
   }
 
   Future<void> selectAudioOutput(MediaDevice device) async {
-    /*
-    if (!lkPlatformIsDesktop()) {
+    
+    if (!lkPlatformIsDesktop() || !lkPlatformIsMobile()) {
       logger.warning('selectAudioOutput is only supported on Desktop');
       return;
-    }*/
+    }
     selectedAudioOutput = device;
     await rtc.Helper.selectAudioOutput(device.deviceId);
     logger.fine('Livekit: selectAudioOutput selectedAudioOutput:$selectedAudioOutput deviceId:${device.deviceId}');
