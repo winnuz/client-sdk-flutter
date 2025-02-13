@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 
 import 'package:meta/meta.dart';
 
 import '../logger.dart';
+import '../support/platform.dart';
 import 'native_audio.dart';
 
 // Method channel methods to call native code.
@@ -33,8 +32,9 @@ class Native {
   static Future<bool> configureAudio(
       NativeAudioConfiguration configuration) async {
     try {
-      logger.info('configureNativeAudio isIOS: ${Platform.isIOS} bypassVoiceProcessing:$bypassVoiceProcessing');
-      if (bypassVoiceProcessing || Platform.isIOS) {
+      final isIOS = lkPlatformIs(PlatformType.iOS);
+      logger.info('configureNativeAudio isIOS: $isIOS bypassVoiceProcessing:$bypassVoiceProcessing');
+      if (bypassVoiceProcessing || isIOS) {
         /// skip configuring audio if bypassVoiceProcessing
         /// is enabled
         return false;
