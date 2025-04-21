@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import '../proto/livekit_models.pb.dart' as lk_models;
+import 'proto/livekit_models.pb.dart' as lk_models;
 import 'core/engine.dart';
 import 'core/room.dart';
 import 'core/signal_client.dart';
