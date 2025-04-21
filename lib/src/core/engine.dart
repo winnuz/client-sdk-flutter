@@ -634,9 +634,11 @@ class Engine extends Disposable with EventsEmittable<EngineEvent> {
         transcription: dp.transcription,
       ));
     } else if (dp.whichValue() == lk_models.DataPacket_Value.sipDtmf) {
+      logger.fine('EngineSipDtmfReceivedEvent: dp:$dp dp-participantIdentity:${dp.participantIdentity} ');
       // SIP DTMF packet
       events.emit(EngineSipDtmfReceivedEvent(
         dtmf: dp.sipDtmf,
+        participantSid: dp.participantIdentity,
       ));
     } else {
       logger.warning('Unknown data packet type: ${dp.whichValue()}');
