@@ -78,6 +78,9 @@ class LocalParticipant extends Participant<LocalTrackPublication> {
     publishOptions ??=
         track.lastPublishOptions ?? room.roomOptions.defaultAudioPublishOptions;
 
+    publishOptions.copyWith(audioBitrate: AudioPreset.speech);
+    logger.fine('publishAudioTrack: audioBitrate:${AudioPreset.speech}');
+
     final trackInfo = await room.engine.addTrack(
       cid: track.getCid(),
       name: publishOptions.name ?? AudioPublishOptions.defaultMicrophoneName,
