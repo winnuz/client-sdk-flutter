@@ -455,11 +455,14 @@ class EngineTranscriptionReceivedEvent with EngineEvent, InternalEvent {
   });
 }
 
+
 @internal
 class EngineSipDtmfReceivedEvent with EngineEvent, InternalEvent {
+  final String participantSid;
   final lk_models.SipDTMF dtmf;
   final String identity;
   const EngineSipDtmfReceivedEvent({
+    required this.participantSid,
     required this.dtmf,
     required this.identity,
   });

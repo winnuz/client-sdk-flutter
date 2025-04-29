@@ -486,6 +486,32 @@ class LocalParticipant extends Participant<LocalTrackPublication> {
     return pub;
   }
 
+  /**
+   * This  function allows you to publish DTMF (Dual-Tone Multi-Frequency)
+   * signals within a LiveKit room. The `publishDtmf` function constructs a
+   * SipDTMF message using the provided code and digit, then encapsulates it
+   * in a DataPacket before sending it via the engine.
+   *
+   * Parameters:
+   *  - code: an integer representing the DTMF signal code
+   *  - digit: the string representing the DTMF digit (e.g., "1", "#", "*")
+   */
+
+  Future<void>  publishDtmf(
+      {int? code, String? digit}
+      ) async{
+    lk_models.SipDTMF sipDTMF = lk_models.SipDTMF(code:code, digit:digit);
+    final packet = lk_models.DataPacket(
+      participantIdentity: identity,
+      user: lk_models.UserPacket(
+        participantIdentity: identity,
+      ),
+      kind:lk_models.DataPacket_Kind.RELIABLE,
+      sipDtmf:sipDTMF,
+    );
+    await room.engine.sendDataPacket(packet);
+  }
+
   Future<void> removePublishedTrack(String trackSid,
       {bool notify = true}) async {
     logger.finer('Unpublish track sid: $trackSid, notify: $notify');

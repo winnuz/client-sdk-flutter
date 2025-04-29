@@ -568,6 +568,7 @@ class Room extends DisposableChangeNotifier with EventsEmittable<RoomEvent> {
         (event) => _onEngineActiveSpeakersUpdateEvent(event.speakers))
     ..on<EngineDataPacketReceivedEvent>(_onDataMessageEvent)
     ..on<EngineTranscriptionReceivedEvent>(_onTranscriptionEvent)
+    ..on<EngineSipDtmfReceivedEvent>(_onSipDtmfReceiveEvent)
     ..on<AudioPlaybackStarted>((event) {
       _handleAudioPlaybackStarted();
     })
@@ -870,6 +871,24 @@ class Room extends DisposableChangeNotifier with EventsEmittable<RoomEvent> {
     events.emit(transcription);
   }
 
+  void _onSipDtmfReceiveEvent(EngineSipDtmfReceivedEvent dtmfEvent){
+    // participant may be null if data is sent from Server-API
+    final senderSid = dtmfEvent.participantSid;
+    RemoteParticipant? senderParticipant;
+    if (senderSid.isNotEmpty) {
+      senderParticipant =
+          _getRemoteParticipantBySid(senderSid);
+    }
+
+    final event = SipDtmfReceivedEvent(
+      participant: senderParticipant,
+      participantSid:senderSid,
+      dtmf: dtmfEvent.dtmf,
+    );
+
+    senderParticipant?.events.emit(event);
+    events.emit(event);
+  }
   void _onDataMessageEvent(EngineDataPacketReceivedEvent dataPacketEvent) {
     // participant may be null if data is sent from Server-API
     RemoteParticipant? senderParticipant;
