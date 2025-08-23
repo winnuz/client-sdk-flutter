@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import 'core/engine.dart';
 import 'core/room.dart';
 import 'core/signal_client.dart';
@@ -24,6 +25,7 @@ import 'publication/track_publication.dart';
 import 'stats/stats.dart';
 import 'track/processor.dart';
 import 'track/track.dart';
+import 'track/processor.dart';
 import 'types/other.dart';
 import 'types/participant_permissions.dart';
 import 'types/transcription_segment.dart';
@@ -471,6 +473,24 @@ class TranscriptionEvent with RoomEvent, ParticipantEvent {
     required this.publication,
     required this.segments,
   });
+}
+
+/// Sip Dtmf received from  [RemoteParticipant].
+/// Emitted by [Room] and [RemoteParticipant].
+class SipDtmfReceivedEvent with RoomEvent, ParticipantEvent {
+  /// Sender of the data. This may be null if data is sent from Server API.
+  final RemoteParticipant? participant;
+  final String participantSid;
+  final lk_models.SipDTMF dtmf;
+  const SipDtmfReceivedEvent({
+    required this.participant,
+    required this.participantSid,
+    required this.dtmf,
+  });
+
+  @override
+  String toString() => '${runtimeType}'
+      '(participant: ${participant}, id:${participantSid} sipDTMF: ${dtmf})';
 }
 
 class ParticipantNameUpdatedEvent with RoomEvent, ParticipantEvent {
