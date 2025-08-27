@@ -29,6 +29,7 @@ import 'track/track.dart';
 import 'track/processor.dart';
 import 'types/other.dart';
 import 'types/participant_permissions.dart';
+import 'types/participant_state.dart' show ParticipantState;
 import 'types/transcription_segment.dart';
 
 /// Base type for all LiveKit events.
@@ -369,6 +370,18 @@ class ParticipantMetadataUpdatedEvent with RoomEvent, ParticipantEvent {
   const ParticipantMetadataUpdatedEvent({
     required this.participant,
     required this.metadata,
+  });
+
+  @override
+  String toString() => '${runtimeType}(participant: ${participant})';
+}
+
+class ParticipantStateUpdatedEvent with RoomEvent, ParticipantEvent {
+  final Participant participant;
+  final ParticipantState state;
+  const ParticipantStateUpdatedEvent({
+    required this.participant,
+    required this.state,
   });
 
   @override

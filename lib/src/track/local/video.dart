@@ -17,9 +17,9 @@ import 'package:flutter/foundation.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 
-import 'package:livekit_client/src/extensions.dart';
 import '../../events.dart';
 import '../../exceptions.dart';
+import '../../extensions.dart';
 import '../../logger.dart';
 import '../../options.dart';
 import '../../proto/livekit_models.pb.dart' as lk_models;

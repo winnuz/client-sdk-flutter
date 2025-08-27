@@ -16,25 +16,36 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide internal;
 
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:meta/meta.dart';
 
-import 'package:livekit_client/livekit_client.dart';
+import '../events.dart';
+import '../exceptions.dart';
 import '../extensions.dart';
 import '../internal/events.dart';
 import '../internal/types.dart';
+import '../logger.dart' show logger;
+import '../managers/event.dart';
+import '../options.dart';
 import '../proto/livekit_models.pb.dart' as lk_models;
 import '../proto/livekit_rtc.pb.dart' as lk_rtc;
+import '../publication/local.dart';
 import '../support/disposable.dart';
 import '../support/region_url_provider.dart';
 import '../support/websocket.dart';
+import '../track/local/local.dart';
+import '../track/local/video.dart';
 import '../types/internal.dart';
+import '../types/other.dart';
 import 'signal_client.dart';
 import 'transport.dart';
+
+import '../support/platform.dart'
+    show lkPlatformIsTest, lkPlatformIs, PlatformType;
 
 const maxRetryDelay = 7000;
 
@@ -297,7 +308,11 @@ class Engine extends Disposable with EventsEmittable<EngineEvent> {
     if (isBufferStatusLow(kind) == true) {
       completer.complete();
     } else {
-      onClosing() => completer.completeError('Engine disconnected');
+      onClosing() {
+        if (!completer.isCompleted) {
+          completer.completeError('Engine disconnected');
+        }
+      }
       events.once<EngineClosingEvent>((e) => onClosing());
 
       while (!_dcBufferStatus[kind]!) {
