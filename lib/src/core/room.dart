@@ -840,7 +840,7 @@ class Room extends DisposableChangeNotifier with EventsEmittable<RoomEvent> {
   }
   void _onSipDtmfReceiveEvent(EngineSipDtmfReceivedEvent dtmfEvent){
     // participant may be null if data is sent from Server-API
-    final senderSid = dtmfEvent.participantSid;
+    final senderSid = dtmfEvent.identity;
     RemoteParticipant? senderParticipant;
     if (senderSid.isNotEmpty) {
       senderParticipant =
@@ -849,7 +849,7 @@ class Room extends DisposableChangeNotifier with EventsEmittable<RoomEvent> {
 
     final event = SipDtmfReceivedEvent(
       participant: senderParticipant,
-      participantSid:senderSid,
+      identity:senderSid,
       dtmf: dtmfEvent.dtmf,
     );
 

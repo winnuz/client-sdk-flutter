@@ -19,6 +19,7 @@ import 'core/signal_client.dart';
 import 'participant/local.dart';
 import 'participant/participant.dart';
 import 'participant/remote.dart';
+import 'proto/livekit_models.pb.dart' as lk_models;
 import 'publication/local.dart';
 import 'publication/remote.dart';
 import 'publication/track_publication.dart';
@@ -480,17 +481,17 @@ class TranscriptionEvent with RoomEvent, ParticipantEvent {
 class SipDtmfReceivedEvent with RoomEvent, ParticipantEvent {
   /// Sender of the data. This may be null if data is sent from Server API.
   final RemoteParticipant? participant;
-  final String participantSid;
+  final String identity;
   final lk_models.SipDTMF dtmf;
   const SipDtmfReceivedEvent({
     required this.participant,
-    required this.participantSid,
+    required this.identity,
     required this.dtmf,
   });
 
   @override
   String toString() => '${runtimeType}'
-      '(participant: ${participant}, id:${participantSid} sipDTMF: ${dtmf})';
+      '(participant: ${participant}, id:${identity} sipDTMF: ${dtmf})';
 }
 
 class ParticipantNameUpdatedEvent with RoomEvent, ParticipantEvent {
