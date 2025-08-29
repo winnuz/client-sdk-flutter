@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
+import 'package:livekit_client/src/support/network_qosmanager.dart';
 
 import '../../events.dart';
 import '../../exceptions.dart';
@@ -404,7 +405,7 @@ extension LocalVideoTrackExt on LocalVideoTrack {
     List<rtc.RTCRtpEncoding> encodings,
     List<lk_rtc.SubscribedQuality> layers,
   ) async {
-    logger.fine('Update publishing layers: $layers');
+    logger.fine('setPublishingLayersForSender Update publishing layers: $layers');
 
     final params = sender.parameters;
 
@@ -429,7 +430,7 @@ extension LocalVideoTrackExt on LocalVideoTrack {
           maxQuality = q.quality;
         }
       }
-
+      logger.fine('setPublishingLayersForSender maxQuality: $maxQuality');
       if (maxQuality == lk_models.VideoQuality.OFF) {
         if (encoding.active) {
           encoding.active = false;
@@ -438,6 +439,7 @@ extension LocalVideoTrackExt on LocalVideoTrack {
       } else if (!encoding.active /* || mode.spatial !== maxQuality + 1*/) {
         hasChanged = true;
         encoding.active = true;
+        logger.fine('setPublishingLayersForSender encoding: $encoding');
         /*
         var originalMode = new ScalabilityMode(senderEncodings[0].scalabilityMode)
         mode.spatial = maxQuality + 1;
@@ -451,6 +453,7 @@ extension LocalVideoTrackExt on LocalVideoTrack {
       */
       }
     } else {
+      logger.fine('setPublishingLayersForSender simulcast dynacast encodings encodings: ${encodings.length}');
       // simulcast dynacast encodings
       var idx = 0;
       for (var encoding in encodings) {
@@ -465,11 +468,14 @@ extension LocalVideoTrackExt on LocalVideoTrack {
         if (subscribedQuality == null) {
           continue;
         }
+        logger.fine(
+          'setPublishingLayersForSender setting layer ${subscribedQuality.enabled} to ${encoding.active ? 'enabled' : 'disabled'}',
+        );
         if (encoding.active != subscribedQuality.enabled) {
           hasChanged = true;
           encoding.active = subscribedQuality.enabled;
           logger.fine(
-            'setting layer ${subscribedQuality.quality} to ${encoding.active ? 'enabled' : 'disabled'}',
+            'setPublishingLayersForSender setting layer ${subscribedQuality.quality} to ${encoding.active ? 'enabled' : 'disabled'}',
           );
 
           // FireFox does not support setting encoding.active to false, so we
@@ -497,9 +503,12 @@ extension LocalVideoTrackExt on LocalVideoTrack {
         idx++;
       }
     }
-
-    if (hasChanged) {
+    logger.warning('setPublishingLayersForSender hasChanged:$hasChanged');
+    //if (hasChanged) {
       params.encodings = encodings;
+        // Set DSCP for quality of service
+      await _setQualityParameters(sender);
+  
       try {
         final result = await sender.setParameters(params);
         if (result == false) {
@@ -508,8 +517,63 @@ extension LocalVideoTrackExt on LocalVideoTrack {
       } catch (e) {
         logger.warning('Failed to update sender parameters $e');
       }
+    //}
+  }
+
+  // ... existing code ...
+
+
+  /// Sets quality parameters for encoding layers
+  Future<bool> _setQualityParameters(rtc.RTCRtpSender sender) async {
+    try {
+      final params = sender.parameters;
+      if (params.encodings != null) {
+        for (int i = 0; i < params.encodings!.length; i++) {
+          final encoding = params.encodings![i];
+          logger.fine('_setQualityParameters Setting quality parameters for encoding $i: $encoding');
+
+          // Set different quality parameters for different layers
+          if (i == 0) {
+            // Base layer - highest quality
+            encoding.maxBitrate = 1000000; // 1 Mbps
+            encoding.maxFramerate = 30;
+            encoding.scaleResolutionDownBy = 1.0; // Full resolution
+          } else if (i == 1) {
+            // Enhancement layer - medium quality
+            encoding.maxBitrate = 500000; // 500 Kbps
+            encoding.maxFramerate = 24;
+            encoding.scaleResolutionDownBy = 2.0; // Half resolution
+          } else {
+            // Additional layers - lower quality
+            encoding.maxBitrate = 250000; // 250 Kbps
+            encoding.maxFramerate = 15;
+            encoding.scaleResolutionDownBy = 4.0; // Quarter resolution
+          }
+        }
+
+        // Set network-level QoS for UDP traffic
+        try {
+          await NetworkQoSManager.setWebRTCQoS();
+          logger.fine('Network QoS set successfully for WebRTC');
+        } catch (e) {
+          logger.warning('Failed to set network QoS: $e');
+        }
+
+        final result = await sender.setParameters(params);
+        if (result) {
+          logger.fine('Quality parameters set successfully for all encoding layers');
+        } else {
+          logger.warning('Failed to set quality parameters');
+        }
+        return result;
+      }
+      return false;
+    } catch (e) {
+      logger.warning('Error setting quality parameters: $e');
+      return false;
     }
   }
+// ... existing code ...
 
   SimulcastTrackInfo addSimulcastTrack(
     String codec,
