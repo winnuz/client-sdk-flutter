@@ -12,6 +12,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketException
 import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
 class NetworkQoSManager(private val context: Context) {
     companion object {
@@ -29,8 +30,94 @@ class NetworkQoSManager(private val context: Context) {
     private var connectivityManager: ConnectivityManager? = null
     private var currentNetwork: Network? = null
 
+    // Socket registry to map socketId to actual socket objects
+    private val socketRegistry = ConcurrentHashMap<String, Any>()
+
     init {
         connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+
+    /**
+     * Register a socket with a unique ID
+     */
+    fun registerSocket(socketId: String, socket: Any): Boolean {
+        return try {
+            socketRegistry[socketId] = socket
+            Log.d(TAG, "Socket registered with ID: $socketId")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register socket: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Unregister a socket
+     */
+    fun unregisterSocket(socketId: String): Boolean {
+        return try {
+            val removed = socketRegistry.remove(socketId)
+            if (removed != null) {
+                Log.d(TAG, "Socket unregistered with ID: $socketId")
+                true
+            } else {
+                Log.w(TAG, "Socket not found with ID: $socketId")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unregister socket: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Get socket by ID
+     */
+    fun getSocket(socketId: String): Any? {
+        return socketRegistry[socketId]
+    }
+
+    /**
+     * Get all registered socket IDs
+     */
+    fun getRegisteredSocketIds(): List<String> {
+        return socketRegistry.keys.toList()
+    }
+
+    /**
+     * Set QoS for UDP socket by ID
+     */
+    fun setUDPQoS(socketId: String, dscpValue: Int): Boolean {
+        return try {
+            val socket = socketRegistry[socketId]
+            if (socket is DatagramSocket) {
+                setUDPQoS(socket, dscpValue)
+            } else {
+                Log.w(TAG, "Socket with ID $socketId is not a UDP socket")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set UDP QoS for socket $socketId: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Set QoS for TCP socket by ID
+     */
+    fun setTCPQoS(socketId: String, dscpValue: Int): Boolean {
+        return try {
+            val socket = socketRegistry[socketId]
+            if (socket is Socket) {
+                setTCPQoS(socket, dscpValue)
+            } else {
+                Log.w(TAG, "Socket with ID $socketId is not a TCP socket")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set TCP QoS for socket $socketId: ${e.message}")
+            false
+        }
     }
 
     /**
@@ -39,10 +126,8 @@ class NetworkQoSManager(private val context: Context) {
     fun setUDPQoS(socket: DatagramSocket, dscpValue: Int): Boolean {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Android 8.0+ - use TrafficClass
                 setTrafficClass(socket, dscpValue)
             } else {
-                // Older Android versions - use reflection
                 setTrafficClassLegacy(socket, dscpValue)
             }
             Log.d(TAG, "UDP QoS set successfully with DSCP: $dscpValue")
@@ -71,6 +156,64 @@ class NetworkQoSManager(private val context: Context) {
         }
     }
 
+    /**
+     * Set adaptive QoS for socket by ID
+     */
+    fun setAdaptiveQoS(socketId: String): Boolean {
+        return try {
+            val socket = socketRegistry[socketId]
+            if (socket != null) {
+                val networkType = getCurrentNetworkType()
+                val dscpValue = getAdaptiveDSCP(networkType)
+
+                when (socket) {
+                    is DatagramSocket -> setUDPQoS(socket, dscpValue)
+                    is Socket -> setTCPQoS(socket, dscpValue)
+                    else -> false
+                }
+            } else {
+                Log.w(TAG, "Socket not found with ID: $socketId")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set adaptive QoS for socket $socketId: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Get adaptive DSCP value based on network type
+     */
+    private fun getAdaptiveDSCP(networkType: String): Int {
+        return when (networkType) {
+            "WIFI" -> DSCP_AF41      // High priority for WiFi
+            "CELLULAR" -> DSCP_EF     // Highest priority for cellular
+            "ETHERNET" -> DSCP_AF31   // Medium priority for Ethernet
+            "BLUETOOTH" -> DSCP_AF21  // Lower priority for Bluetooth
+            else -> DSCP_CS0          // Default for unknown networks
+        }
+    }
+
+    /**
+     * Get current network type
+     */
+    fun getCurrentNetworkType(): String {
+        return try {
+            val activeNetwork = connectivityManager?.activeNetwork
+            val networkCapabilities = connectivityManager?.getNetworkCapabilities(activeNetwork)
+
+            when {
+                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> "WIFI"
+                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> "CELLULAR"
+                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> "ETHERNET"
+                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) == true -> "BLUETOOTH"
+                else -> "UNKNOWN"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get network type: ${e.message}")
+            "UNKNOWN"
+        }
+    }
     /**
      * Set traffic class for modern Android versions
      */
@@ -119,62 +262,14 @@ class NetworkQoSManager(private val context: Context) {
     }
 
     /**
-     * Set QoS for specific network interface
+     * Clean up all registered sockets
      */
-    fun setNetworkQoS(network: Network, dscpValue: Int): Boolean {
-        return try {
-            // This is a more advanced approach that might require system permissions
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
-                if (networkCapabilities != null) {
-                    Log.d(TAG, "Network capabilities: $networkCapabilities")
-                    // Note: Direct network QoS setting might require system app privileges
-                }
-            }
-            true
+    fun cleanup() {
+        try {
+            socketRegistry.clear()
+            Log.d(TAG, "All sockets cleaned up")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set network QoS: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Get current network type
-     */
-    fun getCurrentNetworkType(): String {
-        return try {
-            val activeNetwork = connectivityManager?.activeNetwork
-            val networkCapabilities = connectivityManager?.getNetworkCapabilities(activeNetwork)
-
-            when {
-                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> "WIFI"
-                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> "CELLULAR"
-                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> "ETHERNET"
-                networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) == true -> "BLUETOOTH"
-                else -> "UNKNOWN"
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get network type: ${e.message}")
-            "UNKNOWN"
-        }
-    }
-
-    /**
-     * Set QoS based on network type
-     */
-    fun setAdaptiveQoS(socket: Any, networkType: String): Boolean {
-        val dscpValue = when (networkType) {
-            "WIFI" -> DSCP_AF41      // High priority for WiFi
-            "CELLULAR" -> DSCP_EF     // Highest priority for cellular
-            "ETHERNET" -> DSCP_AF31   // Medium priority for Ethernet
-            "BLUETOOTH" -> DSCP_AF21  // Lower priority for Bluetooth
-            else -> DSCP_CS0          // Default for unknown networks
-        }
-
-        return when (socket) {
-            is DatagramSocket -> setUDPQoS(socket, dscpValue)
-            is Socket -> setTCPQoS(socket, dscpValue)
-            else -> false
+            Log.e(TAG, "Failed to cleanup sockets: ${e.message}")
         }
     }
 }

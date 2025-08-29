@@ -37,7 +37,7 @@ import io.flutter.plugin.common.BinaryMessenger
 import org.webrtc.AudioTrack
 import java.net.DatagramSocket
 import java.net.Socket
-
+import java.util.UUID
 /** LiveKitPlugin */
 class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
   private var processors = mutableMapOf<String, Visualizer>()
@@ -69,19 +69,58 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
     binaryMessenger = flutterPluginBinding.binaryMessenger
   }
 
+    private fun registerSocket(call: MethodCall, result: Result) {
+        try {
+            val socketType = call.argument<String>("socketType") ?: ""
+            val socketId = call.argument<String>("socketId") ?: UUID.randomUUID().toString()
+
+            // In a real implementation, you'd create the actual socket here
+            // For now, we'll create a placeholder and register it
+            val socket: Any = when (socketType.lowercase()) {
+                "udp" -> DatagramSocket()
+                "tcp" -> Socket()
+                else -> {
+                    result.error("INVALID_SOCKET_TYPE", "Invalid socket type: $socketType", null)
+                    return
+                }
+            }
+
+            val success = networkQoSManager.registerSocket(socketId, socket)
+            if (success) {
+                result.success(socketId)
+            } else {
+                result.error("SOCKET_REGISTRATION_FAILED", "Failed to register socket", null)
+            }
+        } catch (e: Exception) {
+            result.error("SOCKET_REGISTRATION_ERROR", "Error registering socket: ${e.message}", null)
+        }
+    }
+
+    private fun unregisterSocket(call: MethodCall, result: Result) {
+        try {
+            val socketId = call.argument<String>("socketId") ?: ""
+            if (socketId.isNotEmpty()) {
+                val success = networkQoSManager.unregisterSocket(socketId)
+                result.success(success)
+            } else {
+                result.error("INVALID_SOCKET_ID", "Invalid socket ID", null)
+            }
+        } catch (e: Exception) {
+            result.error("SOCKET_UNREGISTRATION_ERROR", "Error unregistering socket: ${e.message}", null)
+        }
+    }
+
     private fun setUDPQoS(call: MethodCall, result: Result) {
         try {
             val dscpValue = call.argument<Int>("dscpValue") ?: NetworkQoSManager.DSCP_CS0
             val socketId = call.argument<String>("socketId") ?: ""
-            
-            // In a real implementation, you'd need to maintain a map of socket IDs to actual sockets
-            // For now, we'll return success and log the request
-            Log.d("LiveKitPlugin", "UDP QoS requested for socket $socketId with DSCP $dscpValue")
-            
-            // You would implement actual socket QoS setting here
-            // networkQoSManager.setUDPQoS(socket, dscpValue)
-            
-            result.success(true)
+
+            if (socketId.isNotEmpty()) {
+                val success = networkQoSManager.setUDPQoS(socketId, dscpValue)
+                result.success(success)
+            } else {
+                result.error("INVALID_SOCKET_ID", "Invalid socket ID", null)
+            }
         } catch (e: Exception) {
             result.error("UDP_QOS_ERROR", "Failed to set UDP QoS", e.message)
         }
@@ -91,10 +130,13 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
         try {
             val dscpValue = call.argument<Int>("dscpValue") ?: NetworkQoSManager.DSCP_CS0
             val socketId = call.argument<String>("socketId") ?: ""
-            
-            Log.d("LiveKitPlugin", "TCP QoS requested for socket $socketId with DSCP $dscpValue")
-            
-            result.success(true)
+
+            if (socketId.isNotEmpty()) {
+                val success = networkQoSManager.setTCPQoS(socketId, dscpValue)
+                result.success(success)
+            } else {
+                result.error("INVALID_SOCKET_ID", "Invalid socket ID", null)
+            }
         } catch (e: Exception) {
             result.error("TCP_QOS_ERROR", "Failed to set TCP QoS", e.message)
         }
@@ -103,11 +145,13 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
     private fun setAdaptiveQoS(call: MethodCall, result: Result) {
         try {
             val socketId = call.argument<String>("socketId") ?: ""
-            val networkType = call.argument<String>("networkType") ?: ""
-            
-            Log.d("LiveKitPlugin", "Adaptive QoS requested for socket $socketId on network $networkType")
-            
-            result.success(true)
+
+            if (socketId.isNotEmpty()) {
+                val success = networkQoSManager.setAdaptiveQoS(socketId)
+                result.success(success)
+            } else {
+                result.error("INVALID_SOCKET_ID", "Invalid socket ID", null)
+            }
         } catch (e: Exception) {
             result.error("ADAPTIVE_QOS_ERROR", "Failed to set adaptive QoS", e.message)
         }
@@ -122,7 +166,15 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
         }
     }
 
-    // ... existing audio focus methods ...
+    private fun getRegisteredSocketIds(result: Result) {
+        try {
+            val socketIds = networkQoSManager.getRegisteredSocketIds()
+            result.success(socketIds)
+        } catch (e: Exception) {
+            result.error("SOCKET_IDS_ERROR", "Failed to get registered socket IDs", e.message)
+        }
+    }
+
 
   @SuppressLint("SuspiciousIndentation")
   private fun handleStartVisualizer(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -196,6 +248,12 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
       return
     }
       when (call.method) {
+          "registerSocket" -> {
+              registerSocket(call, result)
+          }
+          "unregisterSocket" -> {
+              unregisterSocket(call, result)
+          }
           "setUDPQoS" -> {
               setUDPQoS(call, result)
           }
@@ -208,6 +266,9 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
           "getNetworkType" -> {
               getNetworkType(result)
           }
+          "getRegisteredSocketIds" -> {
+              getRegisteredSocketIds(result)
+          }
           else -> {
               result.notImplemented()
           }
@@ -217,5 +278,6 @@ class LiveKitPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandle
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
     eventChannel.setStreamHandler(null)
+      networkQoSManager.cleanup()
   }
 }

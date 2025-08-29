@@ -512,6 +512,7 @@ class LocalParticipant extends Participant<LocalTrackPublication> {
   Future<void> removePublishedTrack(String trackSid,
       {bool notify = true}) async {
     logger.finer('Unpublish track sid: $trackSid, notify: $notify');
+
     final pub = trackPublications.remove(trackSid);
     if (pub == null) {
       logger.warning('Publication not found $trackSid');
@@ -582,6 +583,7 @@ class LocalParticipant extends Participant<LocalTrackPublication> {
   /// Convenience method to unpublish all tracks.
   Future<void> unpublishAllTracks(
       {bool notify = true, bool? stopOnUnpublish}) async {
+
     final trackSids = trackPublications.keys.toSet();
     for (final trackid in trackSids) {
       await removePublishedTrack(trackid, notify: notify);

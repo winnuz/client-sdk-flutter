@@ -67,6 +67,7 @@ class LocalVideoTrack extends LocalTrack with VideoTrack {
   Map<(String, int), rtc.RTCRtpEncoding> encodingBackups = {};
 
   List<lk_rtc.SubscribedCodec> subscribedCodecs = [];
+  final Map<rtc.RTCRtpSender, String> _senderSocketIds = {};
 
   @override
   Future<bool> monitorStats() async {
@@ -520,60 +521,50 @@ extension LocalVideoTrackExt on LocalVideoTrack {
     //}
   }
 
-  // ... existing code ...
 
-
-  /// Sets quality parameters for encoding layers
+  /// Sets quality parameters for encoding layers with network QoS
   Future<bool> _setQualityParameters(rtc.RTCRtpSender sender) async {
     try {
-      final params = sender.parameters;
-      if (params.encodings != null) {
-        for (int i = 0; i < params.encodings!.length; i++) {
-          final encoding = params.encodings![i];
-          logger.fine('_setQualityParameters Setting quality parameters for encoding $i: $encoding');
+      // Register a socket for this sender and set QoS
+      try {
+        final socketId = await NetworkQoSManager.registerSocket('udp');
+        logger.fine('Socket registered with ID: $socketId for sender');
 
-          // Set different quality parameters for different layers
-          if (i == 0) {
-            // Base layer - highest quality
-            encoding.maxBitrate = 1000000; // 1 Mbps
-            encoding.maxFramerate = 30;
-            encoding.scaleResolutionDownBy = 1.0; // Full resolution
-          } else if (i == 1) {
-            // Enhancement layer - medium quality
-            encoding.maxBitrate = 500000; // 500 Kbps
-            encoding.maxFramerate = 24;
-            encoding.scaleResolutionDownBy = 2.0; // Half resolution
-          } else {
-            // Additional layers - lower quality
-            encoding.maxBitrate = 250000; // 250 Kbps
-            encoding.maxFramerate = 15;
-            encoding.scaleResolutionDownBy = 4.0; // Quarter resolution
-          }
-        }
+        // Store the mapping
+        _senderSocketIds[sender] = socketId;
 
         // Set network-level QoS for UDP traffic
-        try {
-          await NetworkQoSManager.setWebRTCQoS();
-          logger.fine('Network QoS set successfully for WebRTC');
-        } catch (e) {
-          logger.warning('Failed to set network QoS: $e');
+        final qosSuccess = await NetworkQoSManager.setWebRTCQoS(socketId);
+        if (qosSuccess) {
+          logger.fine('Network QoS set successfully for WebRTC sender: $socketId');
+        } else {
+          logger.warning('Failed to set network QoS for sender: $socketId');
         }
 
-        final result = await sender.setParameters(params);
-        if (result) {
-          logger.fine('Quality parameters set successfully for all encoding layers');
-        } else {
-          logger.warning('Failed to set quality parameters');
-        }
-        return result;
+      } catch (e) {
+        logger.warning('Failed to set network QoS: $e');
       }
-      return false;
+
     } catch (e) {
       logger.warning('Error setting quality parameters: $e');
-      return false;
+
+    }
+    return false;
+  }
+
+  /// Clean up socket when sender is no longer needed
+  Future<void> cleanupSenderSocket(rtc.RTCRtpSender sender) async {
+    try {
+      final socketId = _senderSocketIds.remove(sender);
+      if (socketId != null) {
+        await NetworkQoSManager.unregisterSocket(socketId);
+        logger.fine('Socket cleaned up for sender: $socketId');
+      }
+    } catch (e) {
+      logger.warning('Error cleaning up sender socket: $e');
     }
   }
-// ... existing code ...
+
 
   SimulcastTrackInfo addSimulcastTrack(
     String codec,
