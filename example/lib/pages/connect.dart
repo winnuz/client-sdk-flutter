@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_datawedge/flutter_datawedge.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:livekit_example/pages/prejoin.dart';
@@ -39,20 +44,51 @@ class _ConnectPageState extends State<ConnectPage> {
   bool _e2ee = false;
   bool _multiCodec = false;
   String _preferredCodec = 'VP8';
+  late FlutterDataWedge fdw;
+  StreamSubscription? _onScanSubscription;
+  final profileName = 'LiveKit Sample App';
 
   @override
   void initState() {
     super.initState();
-    _readPrefs();
-    if (lkPlatformIs(PlatformType.android)) {
-      _checkPermissions();
-    }
+    WidgetsBindingCompatible.instance?.addPostFrameCallback((_) async {
+      await _readPrefs();
+      if (lkPlatformIs(PlatformType.android)) {
+        await _checkPermissions();
+        await _initScanner();
+        _setupListeners();
+      }
+    });
   }
 
+  void _setupListeners(){
+    _onScanSubscription = fdw.onScanResult.listen((ScanResult result) {
+      print('ScanResult: ${result.data}');
+      try{
+        final resultData = result.data;
+        if (resultData.isNotEmpty){
+          final map = jsonDecode(resultData);
+          print('ScanResult map: $map type:${map.runtimeType}');
+          if (map != null && map is Map){
+            if (map.containsKey('uri')){
+              _uriCtrl.text = map['uri'];
+            }
+            if (map.containsKey('token')){
+              _tokenCtrl.text = map['token'];
+              print('ScanResult read _tokenCtrl:${_tokenCtrl.text}');
+            }
+          }
+        }
+      }catch(e){
+        print('ScanResult exception $e');
+      }
+    });
+  }
   @override
   void dispose() {
     _uriCtrl.dispose();
     _tokenCtrl.dispose();
+    _onScanSubscription?.cancel();
     super.dispose();
   }
 
@@ -77,6 +113,14 @@ class _ConnectPageState extends State<ConnectPage> {
       print('Microphone Permission disabled');
     }
   }
+  Future<void> _initScanner() async {
+    if (Platform.isAndroid) {
+      fdw = FlutterDataWedge();
+      await fdw.initialize();
+      await fdw.createDefaultProfile(profileName: profileName);
+    }
+  }
+
 
   // Read saved URL and Token
   Future<void> _readPrefs() async {
