@@ -168,18 +168,22 @@ class NativeAudioManagement {
   static Future<void> start() async {
     // Audio configuration for Android.
     if (lkPlatformIs(PlatformType.android)) {
+      logger.fine('NativeAudioManagement: bypassVoiceProcessing:${Native.bypassVoiceProcessing} ');
       if (Native.bypassVoiceProcessing) {
         await rtc.Helper.setAndroidAudioConfiguration(
             rtc.AndroidAudioConfiguration.media);
+        logger.fine('NativeAudioManagement: bypassVoiceProcessing rtc.AndroidAudioConfiguration.media ');
       } else {
         await rtc.Helper.setAndroidAudioConfiguration(
             rtc.AndroidAudioConfiguration.communication);
+        logger.fine('NativeAudioManagement: bypassVoiceProcessing rtc.AndroidAudioConfiguration.communication ');
       }
     }
   }
 
   static Future<void> stop() async {
     if (lkPlatformIs(PlatformType.android)) {
+      logger.fine('NativeAudioManagement:stop');
       await rtc.Helper.clearAndroidCommunicationDevice();
     }
   }

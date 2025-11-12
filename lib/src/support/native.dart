@@ -41,7 +41,7 @@ class Native {
       NativeAudioConfiguration configuration) async {
     try {
       final isIOS = lkPlatformIs(PlatformType.iOS);
-      logger.info('configureNativeAudio isIOS: $isIOS bypassVoiceProcessing:$bypassVoiceProcessing');
+      logger.info('configureNativeAudio bypassVoiceProcessing:$bypassVoiceProcessing');
       if (bypassVoiceProcessing || isIOS) {
         /// skip configuring audio if bypassVoiceProcessing
         /// is enabled
@@ -52,6 +52,7 @@ class Native {
         'configureNativeAudio',
         configuration.toMap(),
       );
+      logger.info('configureNativeAudio configuration:${configuration.toMap()}');
       return result == true;
     } catch (error) {
       logger.warning('configureNativeAudio did throw $error');
