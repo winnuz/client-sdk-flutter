@@ -19,7 +19,9 @@ import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
 
 import '../logger.dart';
+
 import '../managers/broadcast_manager.dart';
+import '../support/platform.dart';
 import 'native_audio.dart';
 
 // Method channel methods to call native code.
@@ -39,6 +41,14 @@ class Native {
   @internal
   static Future<bool> configureAudio(NativeAudioConfiguration configuration) async {
     try {
+      final isIOS = lkPlatformIs(PlatformType.iOS);
+      logger.info('configureNativeAudio isIOS: $isIOS bypassVoiceProcessing:$bypassVoiceProcessing');
+      if (bypassVoiceProcessing || isIOS) {
+        /// skip configuring audio if bypassVoiceProcessing
+        /// is enabled
+        return false;
+      }
+
       final result = await channel.invokeMethod<bool>(
         'configureNativeAudio',
         configuration.toMap(),
