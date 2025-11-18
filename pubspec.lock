@@ -293,7 +293,7 @@ packages:
     description:
       path: "."
       ref: test_maxratelimit
-      resolved-ref: "35027c2325c474d53755260c97da77c19655a430"
+      resolved-ref: "5e8ebf739ab55e5fa414fd837c95d41e5070e823"
       url: "https://github.com/winnuz/flutter-webrtc.git"
     source: git
     version: "1.2.0"
