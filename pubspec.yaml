@@ -50,7 +50,6 @@ dependencies:
     git:
       url: https://github.com/winnuz/flutter-webrtc.git
       ref: test_maxratelimit
-      resolved-ref: "4ca6c7bd9cb1c5daba653f009a623e5a9b1558d0"
   dart_webrtc: ^1.6.0
 
 dev_dependencies:

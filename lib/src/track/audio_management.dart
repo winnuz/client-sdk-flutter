@@ -167,14 +167,32 @@ class NativeAudioManagement {
       print('NativeAudioManagement bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
       logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
       if (Native.bypassVoiceProcessing) {
-        rtc.AndroidAudioConfiguration configMedia = rtc.AndroidAudioConfiguration.media;
-        configMedia.sampleRate = 16000;
+        //rtc.AndroidAudioConfiguration configMedia = rtc.AndroidAudioConfiguration.media;
+        final rtc.AndroidAudioConfiguration configMedia = rtc.AndroidAudioConfiguration(
+          manageAudioFocus: true,
+          androidAudioMode: rtc.AndroidAudioMode.normal,
+          androidAudioFocusMode: rtc.AndroidAudioFocusMode.gain,
+          androidAudioStreamType: rtc.AndroidAudioStreamType.music,
+          androidAudioAttributesUsageType: rtc.AndroidAudioAttributesUsageType.media,
+          androidAudioAttributesContentType:
+          rtc.AndroidAudioAttributesContentType.unknown,
+          sampleRate:16000,
+        );
         print('NativeAudioManagement bypassVoiceProcessing:${configMedia.toMap()}');
         logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configMedia.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(configMedia);
       } else {
-        rtc.AndroidAudioConfiguration configComms = rtc.AndroidAudioConfiguration.communication;
-        configComms.sampleRate = 16000;
+        //rtc.AndroidAudioConfiguration configComms = rtc.AndroidAudioConfiguration.communication;
+        final rtc.AndroidAudioConfiguration configComms = rtc.AndroidAudioConfiguration(
+          manageAudioFocus: true,
+          androidAudioMode: rtc.AndroidAudioMode.inCommunication,
+          androidAudioFocusMode: rtc.AndroidAudioFocusMode.gain,
+          androidAudioStreamType: rtc.AndroidAudioStreamType.voiceCall,
+          androidAudioAttributesUsageType:
+          rtc.AndroidAudioAttributesUsageType.voiceCommunication,
+          androidAudioAttributesContentType: rtc.AndroidAudioAttributesContentType.speech,
+          sampleRate:16000,
+        );
         print('NativeAudioManagement bypassVoiceProcessing:${configComms.toMap()}');
         logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configComms.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(rtc.AndroidAudioConfiguration.communication);
