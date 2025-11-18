@@ -288,6 +288,15 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_webrtc:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: test_maxratelimit
+      resolved-ref: "608d67a6a3c1057ad601775e4c313409d5f81408"
+      url: "https://github.com/winnuz/flutter-webrtc.git"
+    source: git
+    version: "1.2.0"
   frontend_server_client:
     dependency: transitive
     description:
