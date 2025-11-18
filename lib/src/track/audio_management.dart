@@ -164,9 +164,17 @@ class NativeAudioManagement {
   static Future<void> start() async {
     // Audio configuration for Android.
     if (lkPlatformIs(PlatformType.android)) {
+      print('NativeAudioManagement bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
+      logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
       if (Native.bypassVoiceProcessing) {
-        await rtc.Helper.setAndroidAudioConfiguration(rtc.AndroidAudioConfiguration.media);
+        final configMedia = rtc.AndroidAudioConfiguration.media;
+        print('NativeAudioManagement bypassVoiceProcessing:${configMedia.toMap()}');
+        logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configMedia.toMap()}');
+        await rtc.Helper.setAndroidAudioConfiguration(configMedia);
       } else {
+        final configComms = rtc.AndroidAudioConfiguration.communication;
+        print('NativeAudioManagement bypassVoiceProcessing:${configComms.toMap()}');
+        logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configComms.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(rtc.AndroidAudioConfiguration.communication);
       }
     }
@@ -174,6 +182,8 @@ class NativeAudioManagement {
 
   static Future<void> stop() async {
     if (lkPlatformIs(PlatformType.android)) {
+      print('NativeAudioManagement stop clearAndroidCommunicationDevice');
+      logger.fine('[NativeAudioManagement] stop clearAndroidCommunicationDevice');
       await rtc.Helper.clearAndroidCommunicationDevice();
     }
   }
