@@ -178,8 +178,8 @@ class NativeAudioManagement {
           rtc.AndroidAudioAttributesContentType.unknown,
           sampleRate:16000,
         );
-        print('NativeAudioManagement bypassVoiceProcessing:${configMedia.toMap()}');
-        logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configMedia.toMap()}');
+        print('NativeAudioManagement configMedia:${configMedia.toMap()}');
+        logger.fine('[NativeAudioManagement] configMedia:${configMedia.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(configMedia);
       } else {
         //rtc.AndroidAudioConfiguration configComms = rtc.AndroidAudioConfiguration.communication;
@@ -193,9 +193,9 @@ class NativeAudioManagement {
           androidAudioAttributesContentType: rtc.AndroidAudioAttributesContentType.speech,
           sampleRate:16000,
         );
-        print('NativeAudioManagement bypassVoiceProcessing:${configComms.toMap()}');
-        logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configComms.toMap()}');
-        await rtc.Helper.setAndroidAudioConfiguration(rtc.AndroidAudioConfiguration.communication);
+        print('NativeAudioManagement configComms:${configComms.toMap()}');
+        logger.fine('[NativeAudioManagement] configComms:${configComms.toMap()}');
+        await rtc.Helper.setAndroidAudioConfiguration(configComms);
       }
     }
   }
