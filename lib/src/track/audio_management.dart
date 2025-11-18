@@ -167,12 +167,14 @@ class NativeAudioManagement {
       print('NativeAudioManagement bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
       logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${Native.bypassVoiceProcessing}');
       if (Native.bypassVoiceProcessing) {
-        final configMedia = rtc.AndroidAudioConfiguration.media;
+        rtc.AndroidAudioConfiguration configMedia = rtc.AndroidAudioConfiguration.media;
+        configMedia.sampleRate = 16000;
         print('NativeAudioManagement bypassVoiceProcessing:${configMedia.toMap()}');
         logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configMedia.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(configMedia);
       } else {
-        final configComms = rtc.AndroidAudioConfiguration.communication;
+        rtc.AndroidAudioConfiguration configComms = rtc.AndroidAudioConfiguration.communication;
+        configComms.sampleRate = 16000;
         print('NativeAudioManagement bypassVoiceProcessing:${configComms.toMap()}');
         logger.fine('[NativeAudioManagement] bypassVoiceProcessing:${configComms.toMap()}');
         await rtc.Helper.setAndroidAudioConfiguration(rtc.AndroidAudioConfiguration.communication);

@@ -174,9 +174,9 @@ class Transport extends Disposable {
     }
 
     // actually negotiate
-    logger.fine('starting to negotiate');
+    logger.fine('createAndSendOffer starting to negotiate');
     final offer = await pc.createOffer(options?.toMap() ?? <String, dynamic>{});
-
+    logger.fine('createAndSendOffer starting to offer:${offer.toMap()}');
     final sdpParsed = sdp_transform.parse(offer.sdp ?? '');
     sdpParsed['media']?.forEach((media) {
       if (media['type'] == 'video') {
