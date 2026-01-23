@@ -629,7 +629,11 @@ class Room extends DisposableChangeNotifier with EventsEmittable<RoomEvent> {
     }
     await engine.disconnect();
     if (!isPendingReconnect) {
-      await _engineListener.waitFor<EngineDisconnectedEvent>(duration: const Duration(seconds: 10));
+      try {
+        await _engineListener.waitFor<EngineDisconnectedEvent>(duration: const Duration(seconds: 10));
+      } on TimeoutException {
+        logger.warning('Timeout waiting for EngineDisconnectedEvent, proceeding with cleanup');
+      }
     }
     await _cleanUp();
   }
